@@ -1,0 +1,347 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.jsdelivr.net/npm/csso@5.0.5/dist/csso.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/terser/dist/bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-minifier/4.0.0/htmlminifier.min.js" integrity="sha512-4iIsNBIgG/kZCukIg4oZDZe1ZBRUFfklAGUVpbck6xqjd+tBeX2WqtZChk/HrERHqEBky20H+UqUabF9whH+cw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js" integrity="sha512-FDcVY+g7vc5CXANbrTSg1K5qLyriCsGDYCE02Li1tXEYdNQPvLPHNE+rT2Mjei8N7fZbe0WLhw27j2SrGRpdMg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="lnr-ethers-1.1.0.js"></script>
+  <script src="lnr-web-0.2.2.js"></script>
+
+  <script>
+    var htmlMinify = require('html-minifier').minify;
+    let provider = new ethers.providers.Web3Provider(window.ethereum);
+    let lnr;
+    let lnrWeb;
+    let signer;
+
+    let og = {
+      ethers: ethers,
+      signer: null,
+      provider: null,
+      lnr: null,
+      lnrWeb: null,
+      website: null,
+      redirect: null
+    }
+
+    function setLocalWebsiteTemplateData(){
+      let formData = new FormData(document.getElementById("updateWebsite"));
+        og.website = {
+          domain:"localhost",
+          templateData: null,
+          finalTemplateData: formData.get("websiteData"),
+          pageHash: null,
+          pageTxHash: null,
+          domainAsBytes32: null
+        };
+    }
+
+    async function setWebsiteTemplateData(domain){
+      try{
+        let domainAsBytes32 = og.lnr.domainToBytes32(domain);
+        let filter = og.lnrWeb.lnrWebContract.filters.NewWebsite(domainAsBytes32);
+        let rawResults = await og.lnrWeb.lnrWebContract.queryFilter(filter, 0, og.provider.getBlockNumber());
+        let params = await og.lnrWeb.getRawDataFromChain(rawResults[rawResults.length-1].transactionHash);
+        og.website = {
+          domain: domain,
+          templateData: params._data,
+          finalTemplateData: og.lnrWeb.decompressData(params._data),
+          pageHash: params._pageHash,
+          pageTxHash: params._pageTxHash,
+          domainAsBytes32: params._domain
+        }
+      }
+      catch(e){
+        throw e.message;
+      }
+    } 
+
+    async function connectWallet(){
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      lnr = new LNR(ethers, signer);
+      lnrWeb = new LNR_WEB(lnr, provider);
+      let wallet = await signer.getAddress();
+      document.getElementById('eth_login_button').innerHTML = "Wallet:" + wallet.substring(0,6) + "..." + wallet.slice(wallet.length-4);
+      og.signer = signer;
+      og.provider = provider;
+      og.lnr = lnr;
+      og.lnrWeb = lnrWeb;
+      window.og = og;
+      document.getElementById('web3Buttons').style.display = "inline-block";
+      og.redirect = async function(domain){
+        closeAllMenus();
+        let website = await lnrWeb.getWebsite(domain);
+        console.log(website);
+        document.getElementById('chain_frame').srcdoc = website.finalData;
+        setWebsiteTemplateData(domain);
+      }
+    }
+
+    async function uploadNewFile(){
+      let formData = new FormData(document.getElementById("uploadNewFileForm"));
+      let upload = await lnrWeb.uploadNewFile(formData.get('fileName'),
+                                              formData.get('fileHeaders'),
+                                              formData.get('fileDesc'),
+                                              formData.get('fileData') );
+
+      let uncompressedKeccak256 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(formData.get('fileData')));
+      console.log("Upload Asset Result:")
+      console.log(upload);
+      console.log('txHash', upload.hash);
+      console.log('dataHash', uncompressedKeccak256);
+      console.log("URL");
+      console.log('derp://' + upload.hash + "/" + uncompressedKeccak256);
+    }
+
+    async function updateState(){
+      let formData = new FormData(document.getElementById("updateStateForm"));
+      console.log(formData.get('websiteName'));
+      console.log(formData.get('websiteStateVersion'));
+      console.log(formData.get('websiteState'));
+      let upload = await lnrWeb.updateState(  formData.get('websiteName'),
+                                              formData.get('websiteStateVersion'),
+                                              formData.get('websiteState'));
+
+      console.log("Upload State Result:")
+      console.log(upload);
+    }
+
+    async function uploadLibrary(){
+      let formData = new FormData(document.getElementById("uploadLibrary"));
+      console.log("Fetching " + formData.get('libraryLink'));
+      let libraryText = await fetch(formData.get('libraryLink'));
+      let headers = libraryText.headers;
+      let outputHeaders = {};
+      headers.forEach(function(value,key){
+        if(key === "content-type")
+          outputHeaders[key] = value;
+      });
+      console.log(outputHeaders);
+      console.log("Creating upload tx");
+
+      libraryText = await libraryText.text();
+      console.log("Uncompressed size: " + libraryText.length);
+      let upload = await lnrWeb.uploadNewFile(formData.get('libraryName'),
+                                              JSON.stringify(outputHeaders),
+                                              formData.get('libraryDesc'),
+                                              libraryText );
+
+      let uncompressedKeccak256 = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(libraryText));
+      console.log("Upload Library Result:")
+      console.log(upload);
+      console.log('txHash', upload.hash);
+      console.log('dataHash', uncompressedKeccak256);
+      console.log("Create your script/css tag, and use the derp:// link below as the href");
+      console.log('derp://' + upload.hash + "/" + uncompressedKeccak256);
+    }
+
+    async function updateWebsite(){
+      let formData = new FormData(document.getElementById("updateWebsite"));
+      let siteData = formData.get("websiteData");
+      let siteDataHash = formData.get("websiteDataHashes");
+      let siteTxHash = formData.get("websiteTxHashes");
+
+      let update = await lnrWeb.updateWebsite(formData.get("websiteName"),
+                                                      siteDataHash,
+                                                      siteTxHash,
+                                                      siteData
+                                                      );
+      console.log(update);
+    }
+
+
+    async function viewWebsite(){
+      closeAllMenus();
+      let formData = new FormData(document.getElementById("viewWebsite"));
+      let website = await lnrWeb.getWebsite(formData.get("websiteName"));
+      console.log(website);
+      document.getElementById('chain_frame').srcdoc = website.finalData;
+      setWebsiteTemplateData(formData.get("websiteName"));
+    }
+
+    async function generateWebsite(viewIt){
+      // this has all the code directly embedded into the page
+      let siteCSS = await fetch('website/style.css');
+      let siteJS = await fetch('website/index.js');
+      let siteHTML = await fetch('website/index.html');
+
+      siteCSS = await siteCSS.text();
+      siteJS = await siteJS.text();
+      siteHTML = await siteHTML.text();
+
+      siteCSS = csso.minify(siteCSS).css;
+      var minJS = await Terser.minify(siteJS,{
+        compress: true,
+      });
+      siteJS = minJS.code;
+      siteHTML = htmlMinify(siteHTML);
+
+
+      let outputToChainArray = [];
+      let websiteDisplayArray = [];
+      siteHTML = await lnrWeb.replaceCSS(siteHTML, viewIt, "");
+      siteHTML = await lnrWeb.replaceJS(siteHTML, viewIt, "");
+      let siteSplit = siteHTML.split("</head>");
+
+      websiteDisplayArray.push(siteSplit[0]);
+      websiteDisplayArray.push("<style>" + siteCSS + "</style>");
+      websiteDisplayArray.push("<script type=\"module\">" + siteJS+ "<" + "/script>");
+      websiteDisplayArray.push("</head>");
+      websiteDisplayArray.push(siteSplit[1]);
+      return htmlMinify(websiteDisplayArray.join("\n"),{collapseWhitespace: true});
+
+    }
+
+    async function loadWebsite(){
+      closeAllMenus();
+      let viewableWebsite = await generateWebsite(true);
+      let chainUploadWebsite = await generateWebsite(false);
+      document.getElementById('chain_frame').srcdoc = viewableWebsite;
+
+      const byteSize = function(str){return (new Blob([str]).size)};
+      console.log("Uncompressed: " + byteSize(viewableWebsite)/1000  + "kb")
+      //console.log(compressedPage);
+      document.getElementById('fileData').value = chainUploadWebsite;
+      compressedPage = lnrWeb.compressData(chainUploadWebsite);
+      //console.log(compressedPage);
+      console.log("Compressed: " + byteSize(compressedPage)/1000  + "kb")
+      document.getElementById('uploadNewFileDiv').style.display = "block";
+      document.getElementById('fileDataLabel').innerHTML = "File Data (updated @ " + (new Date().getTime()) + ")";
+      setLocalWebsiteTemplateData();
+    }
+
+    function closeAllMenus(){
+      closeUpdateWebsite();
+      closeUploadLibrary();
+      closeUploadDiv();
+      closeUpdateState();
+    }
+
+    function openUpdateWebsite(){
+      closeAllMenus();
+      document.getElementById('updateWebsiteDiv').style.display = "block";
+    }
+
+    function openUploadLibrary(){
+      closeAllMenus();
+      document.getElementById('uploadLibraryDiv').style.display = "block";
+    }
+
+    function openUpdateState(){
+      closeAllMenus();
+      document.getElementById('updateStateDiv').style.display = "block";
+    }
+
+    function closeUpdateWebsite(){
+      document.getElementById('updateWebsiteDiv').style.display = "none";
+    }
+
+    function closeUploadDiv(){
+      document.getElementById('uploadNewFileDiv').style.display = "none";
+    }
+
+    function closeUploadLibrary(){
+      document.getElementById('uploadLibraryDiv').style.display = "none";
+    }
+
+    function closeUpdateState(){
+      document.getElementById('updateStateDiv').style.display = "none";
+    }
+
+  </script>
+</head>
+
+  <body>
+    <div style="position:fixed; bottom: 0%; left: 0;">
+      <div id="uploadNewFileDiv" style="display:none;background:white;padding:1rem;">
+        <form id="uploadNewFileForm">
+          Upload a new file to the blockchain<br>
+          Check console for txHash and dataHash<br><br>
+          <label for="fileName">File Name</label><br>
+          <input type="text" id="fileName" name="fileName" placeholder="test.html"><br>
+          <label for="fileHeaders">File Type:</label><br>
+          <input type="text" id="fileHeaders" name="fileHeaders" readonly style="background:#D3D3D3;" value='{"content-type": "text/html"}'><br><br>
+          <label for="fileDesc">File Description:</label><br>
+          <input type="text" id="fileDesc" name="fileDesc" placeholder="my website, search, terms, here"><br><br>
+          <label id="fileDataLabel" for="fileData">File Data:</label><br>
+          <input type="text" id="fileData" name="fileData" readonly style="background:#D3D3D3;" placeholder="<html>derp</html>"><br><br>
+        </form>
+        <button tyle="button" onclick="uploadNewFile()">Upload Asset</button>
+        <button type="button" onclick="closeUploadDiv()" style="display:inline-block;">Close</button>
+      </div>
+
+      <div id="updateStateDiv" style="display:none;background:white;padding:1rem;">
+        <form id="updateStateForm">
+          Add State information to a website (used to add dynamic content, blog, message board etc)<br><br>
+          <label for="websiteName">Website name</label><br>
+          <input type="text" id="websiteName" name="websiteName" placeholder="test.og"><br>
+          <label for="websiteStateVersion">Website State Version (if unsure, just leave as 0)</label><br>
+          <input type="text" id="websiteStateVersion" name="websiteStateVersion" value="0"><br>
+          <label for="websiteState">State Data (JSON)</label><br>
+          <input type="text" id="websiteState" name="websiteState" placeholder='{"data":{"derp":"herp"}}''><br>
+          <br>
+        </form>
+        <button tyle="button" onclick="updateState()">Update Website State</button>
+        <button type="button" onclick="closeUpdateState()" style="display:inline-block;">Close</button>
+      </div>
+
+      <div id="updateWebsiteDiv" style="display:none;background:white;padding:1rem;">
+        <form id="updateWebsite">
+          For now we will be working with single page assets<br>
+          When you upload a new asset, link array should have a single empty string for the index.html file<br>
+          Hash array should have an array of tx hashes that contain<br><br>
+          <label for="websiteName">Website name</label><br>
+          <input type="text" id="websiteName" name="websiteName" placeholder="test.og"><br>
+          <label for="websiteData">Website Data</label><br>
+          <input type="text" id="websiteData" name="websiteData" placeholder='{"data":{"derp":"herp"}}''><br>
+          <label for="websiteDataHashes">Webpage Data Hash</label><br>
+          <input type="text" id="websiteDataHashes" name="websiteDataHashes" value=''><br>
+          <label for="websiteTxHashes">Webpage Tx Hash</label><br>
+          <input type="text" id="websiteTxHashes" name="websiteTxHashes" value=''><br>
+          <br>
+        </form>
+        <button tyle="button" onclick="updateWebsite()">Update Website</button>
+        <button type="button" onclick="closeUpdateWebsite()" style="display:inline-block;">Close</button>
+      </div>
+
+      <div id="uploadLibraryDiv" style="display:none;background:white;padding:1rem;">
+        <form id="uploadLibrary">
+          Upload a library permanently to the eth blockchain<br>
+          Check the console for the EtherWeb link (derp://0x.../0x...)<br><br>
+          <label for="libraryName">Library name</label><br>
+          <input type="text" id="libraryName" name="libraryName" placeholder="bulma-0.9.4.min.css"><br>
+          <!--
+          <label style="display:none;"for="libraryType">MIME Type</label><br>
+          <input style="display:none;" type="text" id="libraryType" name="libraryType" placeholder="text/css"><br>
+          -->
+          <label for="libraryDesc">Library Description</label><br>
+          <input type="text" id="libraryDesc" name="libraryDesc" placeholder="bulma CSS v0.9.4"><br>
+          <label for="libraryLink">Library CDN link</label><br>
+          <input type="text" id="libraryLink" name="libraryLink" placeholder='https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css'><br>
+          <br>
+        </form>
+        <button tyle="button" onclick="uploadLibrary()">Upload Library</button>
+        <button type="button" onclick="closeUploadLibrary()" style="display:inline-block;">Close</button>
+      </div>
+
+      <button id="eth_login_button" onclick="connectWallet()" >Connect</button>
+      <div id="web3Buttons" style="display:none;">
+        <button id="load_page" onclick="loadWebsite()">Load Local</button>
+        <button id="update_website" onclick="openUpdateWebsite()">Update Website</button>
+        <button id="update_state" onclick="openUpdateState()">Update State</button>
+        <button id="upload_library" onclick="openUploadLibrary()">Upload Library</button>
+        <form id="viewWebsite" action="javascript:viewWebsite()" style="display:inline-block;">
+          <input type="text" id="loadWebsiteName" name="websiteName" placeholder="test.og"><br>
+          <input type="submit" value="View Website">
+        </form>
+      </div>
+      <form id="uploadNewFileForm" action="javascript:uploadNewFile()">
+    </div>
+    <iframe id="chain_frame"
+        width="100%"
+        height="95%">
+    </iframe>
+  </body>
+</html>

@@ -1,0 +1,58 @@
+button.is-transparent{
+  background-color: transparent;
+}
+
+
+body {
+  margin: 0;
+  font-family: comic sans ms;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #efefef;
+  min-height:100vh;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+
+
+.linageeGradient {
+		color:white;
+		font-size:1.2rem;
+		font-weight: bold;
+    background-image: linear-gradient(46.3deg, #69DFFF 0%, #BC8DFF 100%);
+}
+
+
+.navbar-item.menu-item:hover{
+  background-color: #f7f7f7;
+}
+
+.page {
+	padding: 10px;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100vh;
+}
+
+.hm {
+	border: solid blue 2px;
+	width: 40%;
+	height: 80%;
+}
+
+.lg {
+	background-image: linear-gradient(rgb(168, 155, 225), #90cdf4)
+}
+
+
+.logo-background
+{
+  color: #fff;
+  font-size:1.7rem;
+  font-weight: bold;
+}
