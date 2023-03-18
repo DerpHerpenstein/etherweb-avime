@@ -31,7 +31,7 @@ let newContent = true;
 let derpImages;
 
 async function updateRandomDerp(){
-  $("#random_derp").html(await getDerpSVG(0));
+  $("#random_avime").html(await getDerpSVG(0));
   setTimeout(updateRandomDerp, 1000);
 }
 
