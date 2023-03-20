@@ -313,14 +313,14 @@ $(document).on('click', '#view_derp_button',async function (){
 });
 
 
-$(document).on('click', '#mint_derp_button', async function(){
+$(document).on('click', '#mint_avime_button', async function(){
   try{
     const selected = $("#mint_count_select").find(":selected").text();
-    const cost = ["0", "0.025", "0.05", "0.075", "0.1", "0.125"]
+    const cost = ["0", "0.09", "0.18", "0.27", "0.36", "0.45","0.54","0.63","0.72","0.81","0.9"]
     const options = {value: og.ethers.utils.parseEther(cost[parseInt(selected)] )};
     console.log(cost[parseInt(selected)]);
 
-    const submittedTx = await derpContract.mint(selected, options);
+    const submittedTx = await s01Contract.mint(selected, options);
     const txReceipt = await submittedTx.wait();
       if (txReceipt.status === 0)
           throw new Error("Approve transaction failed");
@@ -336,11 +336,8 @@ async function setupUI(){
   $("#connectWalletButton").click();
   avimeData.s01Supply = (await s01Contract.totalSupply()).toNumber();
   avimeData.fusionSupply = (await fusionContract.totalSupply()).toNumber();
-
-  await updateRandomAvime();
-  await generateAvime(1);
-  //getAllEvents();
-  //$("#rarity_breakdown").html(await generateRarityBreakdown());
+  $("#mint_s01_counter").text(avimeData.s01Supply/6);
+  $("#mint_fusion_counter").text(avimeData.fusionSupply);
   const currentBlock = (await og.provider.getBlockNumber() );
 
 }
@@ -349,6 +346,7 @@ $(document).ready(async function(){
   avimeData.s00Data = await getSeasonData(0);
   avimeData.s01Data = await getSeasonData(1);
   console.log(avimeData);
+  await updateRandomAvime();
   await setupUI();
   await updateUI();
 });
