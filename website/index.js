@@ -167,6 +167,75 @@ async function generateTraitCard(traitId, season, currentSeasonData){
   }
 }
 
+async function generateAvime(currentAvimeId){
+  try{
+    let currentAvime = await fusionContract.getAvime(currentAvimeId);
+    let traitInfo = [];
+    let currentTrait;
+    let currentTraitType;
+    let traitHash;
+    let avimeInnerSVG = "";
+    let avimeSex = currentAvime.sex ? "traitMale": "traitFemale"; 
+
+    for(var i = 0; i < 6; i++){
+      switch(parseInt(currentAvime.contractId[i])) {
+        case 0: currentTrait = await s00Contract.getTrait(parseInt(currentAvime.traitId[i]));
+                currentTraitType = parseInt(parseInt(currentAvime.traitId[i]))%6;
+                traitHash = og.ethers.utils.hexZeroPad(avimeData.s00Data.traitHashes[currentTraitType].toHexString(), 32);
+                traitInfo.push({});
+                traitInfo[i].traitType = currentTraitType;
+                traitInfo[i].traitName = avimeData.s00Data.traitName[currentTraitType][currentTrait];
+                traitInfo[i].traitNumber = currentTrait;
+                traitInfo[i].traitDesc = avimeData.s00Data.traitDesc[currentTraitType][currentTrait];
+                traitInfo[i].traitTypeName = traitTypeName[currentTraitType];
+                traitInfo[i].traitTxHash = traitHash;
+                traitInfo[i].trait_type = traitTypeName[currentTraitType];
+                traitInfo[i].value = avimeData.s00Data.traitName[currentTraitType][currentTrait];
+                avimeInnerSVG += `<image xlink:href="${avimeData.s00Data.traitMale[currentTraitType][currentTrait]}"/>`;
+                break;
+
+        case 1: currentTrait = await s01Contract.getTrait(parseInt(currentAvime.traitId[i]));
+                currentTraitType = parseInt(parseInt(currentAvime.traitId[i]))%6;
+                traitHash = og.ethers.utils.hexZeroPad(avimeData.s01Data.traitHashes[currentTraitType].toHexString(), 32);
+                traitInfo.push({});
+                traitInfo[i].traitType = currentTraitType;
+                traitInfo[i].traitName = avimeData.s01Data.traitName[currentTraitType][currentTrait];
+                traitInfo[i].traitNumber = currentTrait;
+                traitInfo[i].traitDesc = avimeData.s01Data.traitDesc[currentTraitType][currentTrait];
+                traitInfo[i].traitTypeName = traitTypeName[currentTraitType];
+                traitInfo[i].traitTxHash = traitHash;
+                traitInfo[i].trait_type = traitTypeName[currentTraitType];
+                traitInfo[i].value = avimeData.s01Data.traitName[currentTraitType][currentTrait];
+                if(currentTraitType==0)
+                  avimeInnerSVG += `<image xlink:href="${avimeData.s01Data.traitMale[currentTraitType][currentTrait]}"/>`;
+                avimeInnerSVG += `<image xlink:href="${avimeData.s01Data[avimeSex][currentTraitType][currentTrait]}"/>`;
+                break;
+      }
+    }
+
+    let unique = { trait_type: "Fusion Status", value: ""};
+    let aviHash = await fusionContract.getAvimeHash(currentAvime.sex, currentAvime.contractId, currentAvime.traitId);
+    let uniqueAvimeId = await fusionContract.checkAvimeHash(aviHash);
+    let isUnique = uniqueAvimeId==currentAvimeId ? "Original" : "Duplicate of #" + uniqueAvimeId;
+    unique.value = isUnique;
+    traitInfo.push(unique);
+
+    let finalObj = {
+      traits: traitInfo,
+      div:`<div style="width: 320px; height: 320px; image-rendering: pixelated;">
+      <svg viewBox="0 0 160 160">
+      ${avimeInnerSVG}
+      </svg>
+      </div>
+      `
+    }
+    return finalObj;
+  }
+  catch(err){
+    console.log(err.message);
+  }
+}
+
 function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
@@ -174,7 +243,7 @@ function getRandomInt(min, max) {
 }
 
 async function updateRandomAvime(){
-  $("#random_avime").html(await generateTraitCard(1,-1,avimeData.s01Data));
+  $("#random_avime").html( (await generateAvime(getRandomInt(1,300))).div );
   $("#random_trait_background").html(await generateTraitCard(0,-1,avimeData.s01Data));
   $("#random_trait_body").html(await generateTraitCard(1,-1,avimeData.s01Data));
   $("#random_trait_clothes").html(await generateTraitCard(2,-1,avimeData.s01Data));
@@ -182,10 +251,6 @@ async function updateRandomAvime(){
   $("#random_trait_hair").html(await generateTraitCard(4,-1,avimeData.s01Data));
   $("#random_trait_accessory").html(await generateTraitCard(5,-1,avimeData.s01Data));
   setTimeout(updateRandomAvime, 1000);
-}
-
-async function updateRandomTraits(){
-
 }
 
 async function updateUserData(){
@@ -273,6 +338,7 @@ async function setupUI(){
   avimeData.fusionSupply = (await fusionContract.totalSupply()).toNumber();
 
   await updateRandomAvime();
+  await generateAvime(1);
   //getAllEvents();
   //$("#rarity_breakdown").html(await generateRarityBreakdown());
   const currentBlock = (await og.provider.getBlockNumber() );
