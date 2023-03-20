@@ -89,7 +89,7 @@ async function getSeasonData(season){
   }
 }
 
-async function generateTraitCard(traitId, season, currentSeasonData){
+async function generateTraitCard(traitId, season, currentSeasonData, thumbnailOnly){
   try{
     let currentTrait = -1;
     let currentTraitType = -1;
@@ -111,6 +111,8 @@ async function generateTraitCard(traitId, season, currentSeasonData){
               console.log("Trait Type:" + currentTraitType);
               break;
     }
+    if(thumbnailOnly)
+      return `<svg viewBox="0 0 43 43"><image xlink:href="${currentSeasonData.traitThumb[currentTraitType][currentTrait]}"/></svg>`;
 
     let titleSvg = `
       <svg width="362" height="361" viewBox="0 0 362 361" x="18" y="20">
@@ -276,46 +278,6 @@ $(document).on('click', '.derp_link',async function (){
   og.redirect($(this).attr("data"));
 });
 
-$(document).on('click', '#view_derp_button',async function (){
-  try{
-    let derpId = parseInt($("#view_derp_input").val());
-    if(derpId > 0){
-      $("#modal_title").html("Derp #" + derpId);
-      let totalHtml = '<div class="has-text-centered">' + await getDerpSVG(derpId) + "</div>";
-      totalHtml += `<hr>
-        <div class="media-content has-text-left">
-          <p><b>Traits</b></p>
-          <p class="is-5"><b>Eyes:</b> ${traitDescriptions[0][vaultState.tokenTraits[derpId][0]]} 
-            [${ getRarityPct((vaultState.tokenTraits[derpId][0]),0) }%]
-          </p>
-          <p><b>Mouth:</b> ${traitDescriptions[1][vaultState.tokenTraits[derpId][1]]} 
-            [${ getRarityPct((vaultState.tokenTraits[derpId][1]),1) }%]
-          </p>
-          <p><b>Hair/Head:</b> ${traitDescriptions[2][vaultState.tokenTraits[derpId][2]]} 
-            [${ getRarityPct((vaultState.tokenTraits[derpId][2]),2) }%]
-          </p>
-          <p><b>Accessory:</b> ${traitDescriptions[3][vaultState.tokenTraits[derpId][3]]} 
-            [${ getRarityPct((vaultState.tokenTraits[derpId][3]),3) }%]
-          </p>
-        </div>
-      `;
-      $("#modal_text").html(totalHtml);
-      $("#modal_button").click();
-    }
-    else{
-      throw "You must enter a number";
-    }
-    
-  }
-  catch(e){
-    $("#modal_title").html("Error - Unable to load Derp image");
-    $("#modal_text").text(e);
-    $("#modal_button").click();
-  }
-
-});
-
-
 $(document).on('click', '#mint_avime_button', async function(){
   try{
     const selected = $("#mint_count_select").find(":selected").text();
@@ -355,12 +317,42 @@ async function updateFusedWallet(fusionBalance){
 
 async function updateCardsWallet(traitsBalance){
   $("#wallet_cards").html("");
+  $("#wardrobe_background").html("");
+  $("#wardrobe_body").html("");
+  $("#wardrobe_clothes").html("");
+  $("#wardrobe_face").html("");
+  $("#wardrobe_hair").html("");
+  $("#wardrobe_accessory").html("");
+
   for(let i=0; i< traitsBalance; i++){
-    let currentAvimeId = await s01Contract.tokenOfOwnerByIndex(walletAddress,i);
-    let currentCard = await generateTraitCard(currentAvimeId, 1, avimeData.s01Data);
+    let currentCardId = await s01Contract.tokenOfOwnerByIndex(walletAddress,i);
+    let currentCard = await generateTraitCard(currentCardId, 1, avimeData.s01Data);
     $("#wallet_cards").append(`
       <div class="is-inline-block">${currentCard}</div>
     `);
+    let currentThumbnail = await generateTraitCard(currentCardId, 1, avimeData.s01Data, true);
+    currentThumbnail = `
+      <div class=" is-inline-block m-2" style="border-radius:0.75rem;background-color:white;">
+        <div class="has-text-centered">#${currentCardId}</div>
+        <figure class="image is-64x64">
+          ${currentThumbnail}
+        </figure>
+      </div>`
+
+    switch(currentCardId%6){
+      case 0: $("#wardrobe_background").append(currentThumbnail);
+              break;
+      case 1: $("#wardrobe_body").append(currentThumbnail);
+              break;
+      case 2: $("#wardrobe_clothes").append(currentThumbnail);
+              break;
+      case 3: $("#wardrobe_face").append(currentThumbnail);
+              break;
+      case 4: $("#wardrobe_hair").append(currentThumbnail);
+              break;
+      case 5: $("#wardrobe_accessory").append(currentThumbnail);
+              break;
+    }
   }
 }
 
@@ -450,6 +442,14 @@ $(document).on('click', '#view_avime_button', async function(){
     `
   $("#view_avime_div").html(finalDiv);
   $("#view_avime_section").removeClass("is-hidden");
+});
+
+$(document).on('click', '.wardrobe-select', async function(){
+  let tmpData = $(this).attr("data");
+  $(".wardrobe-select").removeClass("is-active");
+  $(this).addClass("is-active");
+  $(".wardrobe-item").addClass("is-hidden");
+  $("#"+tmpData).removeClass("is-hidden");
 });
 
 $(document).on('click', '.menu-item', async function(){
