@@ -114,7 +114,7 @@ async function generateTraitCard(traitId, season, currentSeasonData){
 
     let titleSvg = `
       <svg width="362" height="361" viewBox="0 0 362 361" x="18" y="20">
-        <text x="5" y="28" text-anchor="left" letter-spacing="-1.5" font-family="Courier" font-size="16px" fill="#000">${currentSeasonData.traitName[currentTraitType][currentTrait]}</text>
+        <text x="5" y="28" text-anchor="left" letter-spacing="-1.7" font-family="Courier" font-size="16px" fill="#000">${currentSeasonData.traitName[currentTraitType][currentTrait]}</text>
     `;
 
     let words = currentSeasonData.traitDesc[currentTraitType][currentTrait].split(" ");
@@ -128,7 +128,7 @@ async function generateTraitCard(traitId, season, currentSeasonData){
         for(let j=0; j< i; j++)
           words[j] = "";
 
-        titleSvg += `<text x="5" y="${yLoc}" text-anchor="left" letter-spacing="-1.5" font-family="Courier" font-size="14px" fill="#000">
+        titleSvg += `<text x="5" y="${yLoc}" text-anchor="left" letter-spacing="-1.7" font-family="Courier" font-size="14px" fill="#000">
                         <tspan x="5">${line}</tspan>
                      </text>`;
         yLoc += 15;
@@ -136,11 +136,11 @@ async function generateTraitCard(traitId, season, currentSeasonData){
       }
     }
 
-    titleSvg += `<text x="5" y="${yLoc}" text-anchor="left" letter-spacing="-1.5" font-family="Courier" font-size="15px" fill="#000">
+    titleSvg += `<text x="5" y="${yLoc}" text-anchor="left" letter-spacing="-1.7" font-family="Courier" font-size="15px" fill="#000">
                     <tspan x="5">${words.join(' ')}</tspan>
                   </text>`;
 
-    titleSvg += `<text x="274" y="330" width="200" text-anchor="middle" letter-spacing="-1.5" dominant-baseline="middle" font-family="Courier" font-size="11px"          
+    titleSvg += `<text x="274" y="330" width="200" text-anchor="middle" letter-spacing="-1.7" dominant-baseline="middle" font-family="Courier" font-size="11px"          
                 fill="#000">${"ID: " + traitId}</text>
                 </svg>`;
 
@@ -174,12 +174,22 @@ function getRandomInt(min, max) {
 }
 
 async function updateRandomAvime(){
-  $("#random_avime").html(await generateTraitCard(0,-1,avimeData.s01Data));
+  $("#random_avime").html(await generateTraitCard(1,-1,avimeData.s01Data));
+  $("#random_trait_background").html(await generateTraitCard(0,-1,avimeData.s01Data));
+  $("#random_trait_body").html(await generateTraitCard(1,-1,avimeData.s01Data));
+  $("#random_trait_clothes").html(await generateTraitCard(2,-1,avimeData.s01Data));
+  $("#random_trait_face").html(await generateTraitCard(3,-1,avimeData.s01Data));
+  $("#random_trait_hair").html(await generateTraitCard(4,-1,avimeData.s01Data));
+  $("#random_trait_accessory").html(await generateTraitCard(5,-1,avimeData.s01Data));
   setTimeout(updateRandomAvime, 1000);
 }
 
+async function updateRandomTraits(){
+
+}
+
 async function updateUserData(){
-  
+
 }
 
 async function updateUI(){
