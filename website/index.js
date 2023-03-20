@@ -338,6 +338,8 @@ async function setupUI(){
   avimeData.fusionSupply = (await fusionContract.totalSupply()).toNumber();
   $("#mint_s01_counter").text(avimeData.s01Supply/6);
   $("#mint_fusion_counter").text(avimeData.fusionSupply);
+  if(avimeData.s01Supply/6 < 10000)
+    $("#mint_section").removeClass("is-hidden");
   const currentBlock = (await og.provider.getBlockNumber() );
 
 }
