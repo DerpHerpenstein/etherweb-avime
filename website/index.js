@@ -191,7 +191,9 @@ async function generateAvime(currentAvimeId){
                 traitInfo[i].traitTxHash = traitHash;
                 traitInfo[i].trait_type = traitTypeName[currentTraitType];
                 traitInfo[i].value = avimeData.s00Data.traitName[currentTraitType][currentTrait];
-                avimeInnerSVG += `<image xlink:href="${avimeData.s00Data.traitMale[currentTraitType][currentTrait]}"/>`;
+                if(currentTraitType==0)
+                  avimeInnerSVG += `<image xlink:href="${avimeData.s00Data.traitMale[currentTraitType][currentTrait]}"/>`;
+                avimeInnerSVG += `<image xlink:href="${avimeData.s00Data[avimeSex][currentTraitType][currentTrait]}"/>`;
                 break;
 
         case 1: currentTrait = await s01Contract.getTrait(parseInt(currentAvime.traitId[i]));
@@ -356,6 +358,62 @@ $(document).ready(async function(){
 $(document).on('click', '.avime-faq', async function(){
   let tmpData = $(this).attr("data");
   $("."+tmpData).toggleClass("is-hidden");
+});
+
+$(document).on('click', '#view_avime_button', async function(){
+  let avimeInt = parseInt($("#view_avime_input").val());
+  let currentAvime = await generateAvime(avimeInt);
+  let traitsDiv = "";
+  for(let i=0; i<currentAvime.traits.length; i++){
+    // if it is a number trait
+    if(parseInt(currentAvime.traits[i].traitType) > -1)
+      traitsDiv +=`
+        <div class="card">
+          <div class="card-content p-1 m-2">
+            <div class="media">
+              <div class="media-left">
+                <b>${currentAvime.traits[i].traitTypeName}</b>
+                <figure class="image is-48x48">
+                  <img src="${avimeData.s01Data.traitThumb[currentAvime.traits[i].traitType][currentAvime.traits[i].traitNumber]}" alt="">
+                </figure>
+              </div>
+              <div class="media-content">
+                <p class="title is-5">${currentAvime.traits[i].traitName}</p>
+                <p class="subtitle is-6">${currentAvime.traits[i].traitDesc}</p>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    else
+    traitsDiv +=`
+      <div class="card">
+        <div class="card-content p-1 m-2">
+          <div class="media">
+            <div class="media-content">
+              <p class="title is-5">${currentAvime.traits[i].trait_type}</p>
+              <p class="subtitle is-6">${currentAvime.traits[i].value}</p>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+  }
+  console.log(currentAvime);
+  let finalDiv = `
+    <div class="columns is-multiline">
+      <div class="column is-6">
+        <div class="title has-text-dark">Avime #${avimeInt}</div>
+        <div class="is-inline-block has-text-centered">
+          ${currentAvime.div}
+        </div>
+      </div>
+      <div class="column is-6">
+        ${traitsDiv}
+      </div>
+    </div>
+    `
+  $("#view_avime_div").html(finalDiv);
+  $("#view_avime_section").removeClass("is-hidden");
 });
 
 $(document).on('click', '.menu-item', async function(){
