@@ -413,7 +413,7 @@ $(document).on('click', '#view_avime_button', async function(){
                   <img src="${avimeData.s01Data.traitThumb[currentAvime.traits[i].traitType][currentAvime.traits[i].traitNumber]}" alt="">
                 </figure>
               </div>
-              <div class="media-content">
+              <div class="media-content" style="overflow:hidden">
                 <p class="title is-5">${currentAvime.traits[i].traitName}</p>
                 <p class="subtitle is-6">${currentAvime.traits[i].traitDesc}</p>
               </div>
@@ -425,7 +425,7 @@ $(document).on('click', '#view_avime_button', async function(){
       <div class="card">
         <div class="card-content p-1 m-2">
           <div class="media">
-            <div class="media-content">
+            <div class="media-content" style="overflow:hidden">
               <p class="title is-5">${currentAvime.traits[i].trait_type}</p>
               <p class="subtitle is-6">${currentAvime.traits[i].value}</p>
             </div>
