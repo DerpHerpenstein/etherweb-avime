@@ -224,12 +224,13 @@ async function generateAvime(currentAvimeId){
 
     let finalObj = {
       traits: traitInfo,
-      div:`<div style="width: 320px; height: 320px; image-rendering: pixelated;">
-      <svg viewBox="0 0 160 160">
-      ${avimeInnerSVG}
-      </svg>
-      </div>
-      `
+      svg: `<svg viewBox="0 0 160 160">${avimeInnerSVG}</svg>`,
+      div:`
+        <div style="width: 320px; height: 320px; image-rendering: pixelated;">
+          <svg viewBox="0 0 160 160">
+            ${avimeInnerSVG}
+          </svg>
+        </div>`
     }
     return finalObj;
   }
@@ -334,6 +335,37 @@ $(document).on('click', '#mint_avime_button', async function(){
   }
 });
 
+async function updateFusedWallet(fusionBalance){
+  $("#wallet_avime").html("");
+  for(let i=0; i< fusionBalance; i++){
+    let currentAvimeId = await fusionContract.tokenOfOwnerByIndex(walletAddress,i);
+    let currentAvime = await generateAvime(currentAvimeId);
+    $("#wallet_avime").append(`
+      <div class="m-2 is-inline-block">
+        <div class="avime-border has-text-centered is-inline-block">
+          <div class="avime-inner-border">
+            <div class="has-text-derk has-text-centered subtitle">Avime #${currentAvimeId}</div>
+            ${currentAvime.div}
+          </div>
+        </div>
+      </div>
+    `);
+  }
+}
+
+async function updateCardsWallet(traitsBalance){
+  $("#wallet_cards").html("");
+  for(let i=0; i< traitsBalance; i++){
+    let currentAvimeId = await s01Contract.tokenOfOwnerByIndex(walletAddress,i);
+    let currentCard = await generateTraitCard(currentAvimeId, 1, avimeData.s01Data);
+    $("#wallet_cards").append(`
+      <div class="is-inline-block">${currentCard}</div>
+    `);
+  }
+}
+
+
+
 async function setupUI(){
   $("#connectWalletButton").click();
   avimeData.s01Supply = (await s01Contract.totalSupply()).toNumber();
@@ -342,6 +374,10 @@ async function setupUI(){
   $("#mint_fusion_counter").text(avimeData.fusionSupply);
   if(avimeData.s01Supply/6 < 10000)
     $("#mint_section").removeClass("is-hidden");
+  let fusionBalance = await fusionContract.balanceOf(walletAddress);
+  let s01Balance = await s01Contract.balanceOf(walletAddress);
+  updateFusedWallet(fusionBalance);
+  updateCardsWallet(s01Balance);
   const currentBlock = (await og.provider.getBlockNumber() );
 
 }
@@ -398,7 +434,7 @@ $(document).on('click', '#view_avime_button', async function(){
       </div>`;
 
   }
-  console.log(currentAvime);
+
   let finalDiv = `
     <div class="columns is-multiline">
       <div class="column is-6">
