@@ -85,6 +85,14 @@ blockquote.avime-faq{
   height: auto;
 }
 
+.wardrobe-trait{
+  border-radius:0.75rem;
+  background-color:white;
+}
+.wardrobe-trait.selected{
+  background-color: #ffd456;
+}
+
 .wardrobe-item{
   height:300px;
   min-height:300px;

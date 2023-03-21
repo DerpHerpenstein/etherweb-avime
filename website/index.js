@@ -27,7 +27,13 @@ let avimeData = {
   s00Data: undefined,
   s01Supply: undefined,
   fusionSupply: undefined,
-  s01Data: undefined
+  s01Data: undefined,
+  wardrobeAvime: {
+    contractId: [1,1,1,1,1,1],
+    sex: 0,
+    traitId: [undefined,undefined,undefined,undefined,undefined,undefined],
+    traitNumber: [undefined,undefined,undefined,undefined,undefined,undefined]
+  }
 }
 
 async function getSeasonData(season){
@@ -106,13 +112,11 @@ async function generateTraitCard(traitId, season, currentSeasonData, thumbnailOn
       case 0: 
               break;
       case 1: currentTrait = (await s01Contract.getTrait(traitId));
-              console.log("Trait:" + currentTrait);
               currentTraitType = traitId%6; 
-              console.log("Trait Type:" + currentTraitType);
               break;
     }
     if(thumbnailOnly)
-      return `<svg viewBox="0 0 43 43"><image xlink:href="${currentSeasonData.traitThumb[currentTraitType][currentTrait]}"/></svg>`;
+      return {traitNumber: currentTrait, thumbnail: `<svg viewBox="0 0 43 43"><image xlink:href="${currentSeasonData.traitThumb[currentTraitType][currentTrait]}"/></svg>`};
 
     let titleSvg = `
       <svg width="362" height="361" viewBox="0 0 362 361" x="18" y="20">
@@ -169,9 +173,15 @@ async function generateTraitCard(traitId, season, currentSeasonData, thumbnailOn
   }
 }
 
-async function generateAvime(currentAvimeId){
+async function generateAvime(currentAvimeId, specificAvime){
   try{
-    let currentAvime = await fusionContract.getAvime(currentAvimeId);
+    let currentAvime = undefined;
+    if(specificAvime == undefined)
+      currentAvime = await fusionContract.getAvime(currentAvimeId);
+    else{
+      currentAvime = JSON.parse(JSON.stringify(specificAvime));
+      currentAvime.traitId = currentAvime.traitNumber;
+    }
     let traitInfo = [];
     let currentTrait;
     let currentTraitType;
@@ -198,8 +208,14 @@ async function generateAvime(currentAvimeId){
                 avimeInnerSVG += `<image xlink:href="${avimeData.s00Data[avimeSex][currentTraitType][currentTrait]}"/>`;
                 break;
 
-        case 1: currentTrait = await s01Contract.getTrait(parseInt(currentAvime.traitId[i]));
-                currentTraitType = parseInt(parseInt(currentAvime.traitId[i]))%6;
+        case 1: if(specificAvime == undefined){
+                  currentTrait = await s01Contract.getTrait(parseInt(currentAvime.traitId[i]));
+                  currentTraitType = parseInt(parseInt(currentAvime.traitId[i]))%6;
+                }
+                else{
+                  currentTrait = currentAvime.traitId[i];
+                  currentTraitType = i;
+                }
                 traitHash = og.ethers.utils.hexZeroPad(avimeData.s01Data.traitHashes[currentTraitType].toHexString(), 32);
                 traitInfo.push({});
                 traitInfo[i].traitType = currentTraitType;
@@ -332,10 +348,10 @@ async function updateCardsWallet(traitsBalance){
     `);
     let currentThumbnail = await generateTraitCard(currentCardId, 1, avimeData.s01Data, true);
     currentThumbnail = `
-      <div class=" is-inline-block m-2" style="border-radius:0.75rem;background-color:white;">
+      <div traitid="${currentCardId}" traittype="${currentCardId%6} " traitnumber="${currentThumbnail.traitNumber}" class="wardrobe-trait wardrobe-trait-type-${currentCardId%6}  is-inline-block m-2">
         <div class="has-text-centered">#${currentCardId}</div>
         <figure class="image is-64x64">
-          ${currentThumbnail}
+          ${currentThumbnail.thumbnail}
         </figure>
       </div>`
 
@@ -344,9 +360,9 @@ async function updateCardsWallet(traitsBalance){
               break;
       case 1: $("#wardrobe_body").append(currentThumbnail);
               break;
-      case 2: $("#wardrobe_clothes").append(currentThumbnail);
+      case 2: $("#wardrobe_face").append(currentThumbnail);
               break;
-      case 3: $("#wardrobe_face").append(currentThumbnail);
+      case 3: $("#wardrobe_clothes").append(currentThumbnail);
               break;
       case 4: $("#wardrobe_hair").append(currentThumbnail);
               break;
@@ -386,6 +402,30 @@ $(document).ready(async function(){
 $(document).on('click', '.avime-faq', async function(){
   let tmpData = $(this).attr("data");
   $("."+tmpData).toggleClass("is-hidden");
+});
+
+
+$(document).on('click', '.wardrobe-trait', async function(){
+  let traitType = parseInt($(this).attr("traittype"));
+  let traitId = parseInt($(this).attr("traitid"));
+  let traitNumber = parseInt($(this).attr("traitnumber"));
+  $(".wardrobe-trait-type-" + traitType).removeClass("selected");
+  avimeData.wardrobeAvime.traitNumber[traitType] = traitNumber;
+  avimeData.wardrobeAvime.traitId[traitType] = traitId;
+
+  $("#wardrobe_thumb_" + traitType).attr("src", avimeData.s01Data.traitThumb[traitType][traitNumber]);
+  let fullAvime = true;
+  for(let i=0; i< avimeData.wardrobeAvime.traitId.length; i++){
+    if( !(avimeData.wardrobeAvime.traitId[i] > -1))
+      fullAvime = false;
+  }
+  if(fullAvime){
+    let avimeDiv = (await generateAvime(undefined, avimeData.wardrobeAvime)).div;
+     $("#wardrobe_preview").html(avimeDiv);
+     console.log(avimeData.wardrobeAvime);
+  }
+
+  $(this).addClass("selected");
 });
 
 $(document).on('click', '#view_avime_button', async function(){
@@ -445,6 +485,7 @@ $(document).on('click', '#view_avime_button', async function(){
 });
 
 $(document).on('click', '.wardrobe-select', async function(){
+  console.log($(this));
   let tmpData = $(this).attr("data");
   $(".wardrobe-select").removeClass("is-active");
   $(this).addClass("is-active");
