@@ -404,16 +404,7 @@ $(document).on('click', '.avime-faq', async function(){
   $("."+tmpData).toggleClass("is-hidden");
 });
 
-
-$(document).on('click', '.wardrobe-trait', async function(){
-  let traitType = parseInt($(this).attr("traittype"));
-  let traitId = parseInt($(this).attr("traitid"));
-  let traitNumber = parseInt($(this).attr("traitnumber"));
-  $(".wardrobe-trait-type-" + traitType).removeClass("selected");
-  avimeData.wardrobeAvime.traitNumber[traitType] = traitNumber;
-  avimeData.wardrobeAvime.traitId[traitType] = traitId;
-
-  $("#wardrobe_thumb_" + traitType).attr("src", avimeData.s01Data.traitThumb[traitType][traitNumber]);
+async function generateWardrobeAvime(){
   let fullAvime = true;
   for(let i=0; i< avimeData.wardrobeAvime.traitId.length; i++){
     if( !(avimeData.wardrobeAvime.traitId[i] > -1))
@@ -424,7 +415,26 @@ $(document).on('click', '.wardrobe-trait', async function(){
      $("#wardrobe_preview").html(avimeDiv);
      console.log(avimeData.wardrobeAvime);
   }
+}
 
+$(document).on('click', '.wardrobe-sex', async function(){
+  let tmpData = parseInt($(this).attr("data"));
+  $(".wardrobe-sex").addClass("is-light");
+  $(this).removeClass("is-light");
+  avimeData.wardrobeAvime.sex = tmpData;
+  generateWardrobeAvime();
+});
+
+$(document).on('click', '.wardrobe-trait', async function(){
+  let traitType = parseInt($(this).attr("traittype"));
+  let traitId = parseInt($(this).attr("traitid"));
+  let traitNumber = parseInt($(this).attr("traitnumber"));
+  $(".wardrobe-trait-type-" + traitType).removeClass("selected");
+  avimeData.wardrobeAvime.traitNumber[traitType] = traitNumber;
+  avimeData.wardrobeAvime.traitId[traitType] = traitId;
+
+  $("#wardrobe_thumb_" + traitType).attr("src", avimeData.s01Data.traitThumb[traitType][traitNumber]);
+  generateWardrobeAvime();
   $(this).addClass("selected");
 });
 
