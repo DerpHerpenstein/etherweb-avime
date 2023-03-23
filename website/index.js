@@ -241,6 +241,8 @@ async function generateAvime(currentAvimeId, specificAvime){
     traitInfo.push(unique);
 
     let finalObj = {
+      sex: currentAvime.sex,
+      contractId: currentAvime.contractId,
       traits: traitInfo,
       svg: `<svg viewBox="0 0 160 160">${avimeInnerSVG}</svg>`,
       div:`
@@ -441,10 +443,16 @@ $(document).on('click', '.wardrobe-trait', async function(){
 $(document).on('click', '#view_avime_button', async function(){
   let avimeInt = parseInt($("#view_avime_input").val());
   let currentAvime = await generateAvime(avimeInt);
+  console.log(currentAvime);
   let traitsDiv = "";
   for(let i=0; i<currentAvime.traits.length; i++){
     // if it is a number trait
-    if(parseInt(currentAvime.traits[i].traitType) > -1)
+
+    if(parseInt(currentAvime.traits[i].traitType) > -1){
+      // if s1 show trait, otherwise for s0 show rare
+      let currentTraitThumb = currentAvime.contractId[i] ? avimeData.s01Data.traitThumb[currentAvime.traits[i].traitType][currentAvime.traits[i].traitNumber]:
+                              "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAArCAMAAADWg4HyAAAAM1BMVEX2uADzkwD51Dr1qQDwdAD1qwDzmAD3xyP40TTvpQHyrDr3xCr2vQHwzTf2whn2vQD1twCCUm7uAAAAvklEQVQ4y43VSQ7CMBBEURsHSAjT/U+L8KBv0XSqa/3U+vLGKceX8im6r12m9QuXbSt1qQ1r6a3JMxQrKNYGdPqGYi21VxPWDVg7xUKLQ7HQviafIwDr0R2K/RsAxbqtUGzuO6SlWiitlmIN3dcfilUBWEmxkmJN69W0YsULzDZGc7UxinVaoViocxUrKVZSrKZY9QKzjdGl2hgdFvp4eXRYrt4dipUUK1uxmmI1xUqK1RSrKdZQLBQb/t/i+wBCTg06KhEMbgAAAABJRU5ErkJggg==";
+                        console.log(currentTraitThumb);
       traitsDiv +=`
         <div class="card">
           <div class="card-content p-1 m-2">
@@ -452,7 +460,7 @@ $(document).on('click', '#view_avime_button', async function(){
               <div class="media-left">
                 <b>${currentAvime.traits[i].traitTypeName}</b>
                 <figure class="image is-48x48">
-                  <img src="${avimeData.s01Data.traitThumb[currentAvime.traits[i].traitType][currentAvime.traits[i].traitNumber]}" alt="">
+                  <img src="${currentTraitThumb}" alt="">
                 </figure>
               </div>
               <div class="media-content" style="overflow:hidden">
@@ -462,18 +470,19 @@ $(document).on('click', '#view_avime_button', async function(){
             </div>
           </div>
         </div>`;
+    }
     else
-    traitsDiv +=`
-      <div class="card">
-        <div class="card-content p-1 m-2">
-          <div class="media">
-            <div class="media-content" style="overflow:hidden">
-              <p class="title is-5">${currentAvime.traits[i].trait_type}</p>
-              <p class="subtitle is-6">${currentAvime.traits[i].value}</p>
+      traitsDiv +=`
+        <div class="card">
+          <div class="card-content p-1 m-2">
+            <div class="media">
+              <div class="media-content" style="overflow:hidden">
+                <p class="title is-5">${currentAvime.traits[i].trait_type}</p>
+                <p class="subtitle is-6">${currentAvime.traits[i].value}</p>
+              </div>
             </div>
           </div>
-        </div>
-      </div>`;
+        </div>`;
 
   }
 
