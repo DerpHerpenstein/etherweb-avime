@@ -301,7 +301,6 @@ $(document).on('click', '#mint_avime_button', async function(){
     const selected = $("#mint_count_select").find(":selected").text();
     const cost = ["0", "0.09", "0.18", "0.27", "0.36", "0.45","0.54","0.63","0.72","0.81","0.9"]
     const options = {value: og.ethers.utils.parseEther(cost[parseInt(selected)] )};
-    console.log(cost[parseInt(selected)]);
 
     const submittedTx = await s01Contract.mint(selected, options);
     const txReceipt = await submittedTx.wait();
@@ -317,6 +316,9 @@ $(document).on('click', '#mint_avime_button', async function(){
 
 async function updateFusedWallet(fusionBalance){
   $("#wallet_avime").html("");
+  if(fusionBalance == 0){
+    $("#wallet_avime").html("You don't have any Avime");
+  }
   for(let i=0; i< fusionBalance; i++){
     let currentAvimeId = await fusionContract.tokenOfOwnerByIndex(walletAddress,i);
     let currentAvime = await generateAvime(currentAvimeId);
@@ -341,6 +343,9 @@ async function updateCardsWallet(traitsBalance){
   $("#wardrobe_face").html("");
   $("#wardrobe_hair").html("");
   $("#wardrobe_accessory").html("");
+  if(traitsBalance == 0){
+    $("#wallet_cards").html("You don't have any trait cards");
+  }
 
   for(let i=0; i< traitsBalance; i++){
     let currentCardId = await s01Contract.tokenOfOwnerByIndex(walletAddress,i);
@@ -395,7 +400,7 @@ async function setupUI(){
 $(document).ready(async function(){
   avimeData.s00Data = await getSeasonData(0);
   avimeData.s01Data = await getSeasonData(1);
-  console.log(avimeData);
+  //console.log(avimeData);
   await updateRandomAvime();
   await setupUI();
   await updateUI();
@@ -415,7 +420,7 @@ async function generateWardrobeAvime(){
   if(fullAvime){
     let avimeDiv = (await generateAvime(undefined, avimeData.wardrobeAvime)).div;
      $("#wardrobe_preview").html(avimeDiv);
-     console.log(avimeData.wardrobeAvime);
+     //console.log(avimeData.wardrobeAvime);
   }
 }
 
@@ -443,7 +448,7 @@ $(document).on('click', '.wardrobe-trait', async function(){
 $(document).on('click', '#view_avime_button', async function(){
   let avimeInt = parseInt($("#view_avime_input").val());
   let currentAvime = await generateAvime(avimeInt);
-  console.log(currentAvime);
+  //console.log(currentAvime);
   let traitsDiv = "";
   for(let i=0; i<currentAvime.traits.length; i++){
     // if it is a number trait
@@ -452,7 +457,6 @@ $(document).on('click', '#view_avime_button', async function(){
       // if s1 show trait, otherwise for s0 show rare
       let currentTraitThumb = currentAvime.contractId[i] ? avimeData.s01Data.traitThumb[currentAvime.traits[i].traitType][currentAvime.traits[i].traitNumber]:
                               "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAArCAMAAADWg4HyAAAAM1BMVEX2uADzkwD51Dr1qQDwdAD1qwDzmAD3xyP40TTvpQHyrDr3xCr2vQHwzTf2whn2vQD1twCCUm7uAAAAvklEQVQ4y43VSQ7CMBBEURsHSAjT/U+L8KBv0XSqa/3U+vLGKceX8im6r12m9QuXbSt1qQ1r6a3JMxQrKNYGdPqGYi21VxPWDVg7xUKLQ7HQviafIwDr0R2K/RsAxbqtUGzuO6SlWiitlmIN3dcfilUBWEmxkmJN69W0YsULzDZGc7UxinVaoViocxUrKVZSrKZY9QKzjdGl2hgdFvp4eXRYrt4dipUUK1uxmmI1xUqK1RSrKdZQLBQb/t/i+wBCTg06KhEMbgAAAABJRU5ErkJggg==";
-                        console.log(currentTraitThumb);
       traitsDiv +=`
         <div class="card">
           <div class="card-content p-1 m-2">
@@ -504,7 +508,6 @@ $(document).on('click', '#view_avime_button', async function(){
 });
 
 $(document).on('click', '.wardrobe-select', async function(){
-  console.log($(this));
   let tmpData = $(this).attr("data");
   $(".wardrobe-select").removeClass("is-active");
   $(this).addClass("is-active");
