@@ -297,21 +297,32 @@ $(document).on('click', '.derp_link',async function (){
 });
 
 $(document).on('click', '#mint_avime_button', async function(){
+  $(this).addClass("is-loading");
   try{
     const selected = $("#mint_count_select").find(":selected").text();
     const cost = ["0", "0.09", "0.18", "0.27", "0.36", "0.45","0.54","0.63","0.72","0.81","0.9"]
     const options = {value: og.ethers.utils.parseEther(cost[parseInt(selected)] )};
 
     const submittedTx = await s01Contract.mint(selected, options);
-    const txReceipt = await submittedTx.wait();
-      if (txReceipt.status === 0)
-          throw new Error("Approve transaction failed");
+    const receipt = await submittedTx.wait();
+    if(receipt.status){
+      $("#modal_title").html("Traits Minted!");
+      $("#modal_text").html("Create an Avime in the Fusion tab, or view your cards in the My Cards tab");
+      $("#modal_button").click();
+      setupUI();
+    }
+    else{
+      $("#modal_title").html("Error - Mint Failed!");
+      $("#modal_text").html(JSON.stringify(receipt.status));
+      $("#modal_button").click();
+    }
   }
   catch(e){
     $("#modal_title").html("Error - Mint Failed");
     $("#modal_text").text(e.message);
     $("#modal_button").click();
   }
+  $(this).removeClass("is-loading");
 });
 
 async function updateFusedWallet(fusionBalance){
@@ -426,6 +437,10 @@ async function setupUI(){
   let approved = await s01Contract.isApprovedForAll(walletAddress, fusionAddress);
   if(!approved)
     $("#avime_fusion_approve_button").prop("disabled",false);
+  else{
+    $("#avime_fusion_approve_button").addClass("is-hidden");
+    $("#avime_fusion_fuse_button").removeClass("is-hidden");
+  }
 }
 
 $(document).ready(async function(){
@@ -451,7 +466,7 @@ async function generateWardrobeAvime(){
   if(fullAvime){
     $("#avime_unique").html('Checking Avime Uniqueness...');
     let avimeDiv = (await generateAvime(undefined, avimeData.wardrobeAvime)).div;
-    console.log(avimeData.wardrobeAvime);
+    //console.log(avimeData.wardrobeAvime);
     $("#wardrobe_preview").html(avimeDiv);
     $("#avime_fusion_fuse_button").prop("disabled",false);
     let aviHash = await fusionContract.getAvimeHash(avimeData.wardrobeAvime.sex, avimeData.wardrobeAvime.contractId, avimeData.wardrobeAvime.traitId);
@@ -486,65 +501,74 @@ $(document).on('click', '.wardrobe-trait', async function(){
 });
 
 $(document).on('click', '#view_avime_button', async function(){
-  let avimeInt = parseInt($("#view_avime_input").val());
-  let currentAvime = await generateAvime(avimeInt);
-  //console.log(currentAvime);
-  let traitsDiv = "";
-  for(let i=0; i<currentAvime.traits.length; i++){
-    // if it is a number trait
+  $(this).addClass("is-loading");
+  try{
+    let avimeInt = parseInt($("#view_avime_input").val());
+    let currentAvime = await generateAvime(avimeInt);
+    //console.log(currentAvime);
+    let traitsDiv = "";
+    for(let i=0; i<currentAvime.traits.length; i++){
+      // if it is a number trait
 
-    if(parseInt(currentAvime.traits[i].traitType) > -1){
-      // if s1 show trait, otherwise for s0 show rare
-      let currentTraitThumb = currentAvime.contractId[i] ? avimeData.s01Data.traitThumb[currentAvime.traits[i].traitType][currentAvime.traits[i].traitNumber]:
-                              "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAArCAMAAADWg4HyAAAAM1BMVEX2uADzkwD51Dr1qQDwdAD1qwDzmAD3xyP40TTvpQHyrDr3xCr2vQHwzTf2whn2vQD1twCCUm7uAAAAvklEQVQ4y43VSQ7CMBBEURsHSAjT/U+L8KBv0XSqa/3U+vLGKceX8im6r12m9QuXbSt1qQ1r6a3JMxQrKNYGdPqGYi21VxPWDVg7xUKLQ7HQviafIwDr0R2K/RsAxbqtUGzuO6SlWiitlmIN3dcfilUBWEmxkmJN69W0YsULzDZGc7UxinVaoViocxUrKVZSrKZY9QKzjdGl2hgdFvp4eXRYrt4dipUUK1uxmmI1xUqK1RSrKdZQLBQb/t/i+wBCTg06KhEMbgAAAABJRU5ErkJggg==";
-      traitsDiv +=`
-        <div class="card">
-          <div class="card-content p-1 m-2">
-            <div class="media">
-              <div class="media-left">
-                <b>${currentAvime.traits[i].traitTypeName}</b>
-                <figure class="image is-48x48">
-                  <img src="${currentTraitThumb}" alt="">
-                </figure>
-              </div>
-              <div class="media-content" style="overflow:hidden">
-                <p class="title is-5">${currentAvime.traits[i].traitName}</p>
-                <p class="subtitle is-6">${currentAvime.traits[i].traitDesc}</p>
+      if(parseInt(currentAvime.traits[i].traitType) > -1){
+        // if s1 show trait, otherwise for s0 show rare
+        let currentTraitThumb = currentAvime.contractId[i] ? avimeData.s01Data.traitThumb[currentAvime.traits[i].traitType][currentAvime.traits[i].traitNumber]:
+                                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAArCAMAAADWg4HyAAAAM1BMVEX2uADzkwD51Dr1qQDwdAD1qwDzmAD3xyP40TTvpQHyrDr3xCr2vQHwzTf2whn2vQD1twCCUm7uAAAAvklEQVQ4y43VSQ7CMBBEURsHSAjT/U+L8KBv0XSqa/3U+vLGKceX8im6r12m9QuXbSt1qQ1r6a3JMxQrKNYGdPqGYi21VxPWDVg7xUKLQ7HQviafIwDr0R2K/RsAxbqtUGzuO6SlWiitlmIN3dcfilUBWEmxkmJN69W0YsULzDZGc7UxinVaoViocxUrKVZSrKZY9QKzjdGl2hgdFvp4eXRYrt4dipUUK1uxmmI1xUqK1RSrKdZQLBQb/t/i+wBCTg06KhEMbgAAAABJRU5ErkJggg==";
+        traitsDiv +=`
+          <div class="card">
+            <div class="card-content p-1 m-2">
+              <div class="media">
+                <div class="media-left">
+                  <b>${currentAvime.traits[i].traitTypeName}</b>
+                  <figure class="image is-48x48">
+                    <img src="${currentTraitThumb}" alt="">
+                  </figure>
+                </div>
+                <div class="media-content" style="overflow:hidden">
+                  <p class="title is-5">${currentAvime.traits[i].traitName}</p>
+                  <p class="subtitle is-6">${currentAvime.traits[i].traitDesc}</p>
+                </div>
               </div>
             </div>
-          </div>
-        </div>`;
+          </div>`;
+      }
+      else
+        traitsDiv +=`
+          <div class="card">
+            <div class="card-content p-1 m-2">
+              <div class="media">
+                <div class="media-content" style="overflow:hidden">
+                  <p class="title is-5">${currentAvime.traits[i].trait_type}</p>
+                  <p class="subtitle is-6">${currentAvime.traits[i].value}</p>
+                </div>
+              </div>
+            </div>
+          </div>`;
+
     }
-    else
-      traitsDiv +=`
-        <div class="card">
-          <div class="card-content p-1 m-2">
-            <div class="media">
-              <div class="media-content" style="overflow:hidden">
-                <p class="title is-5">${currentAvime.traits[i].trait_type}</p>
-                <p class="subtitle is-6">${currentAvime.traits[i].value}</p>
-              </div>
-            </div>
+
+    let finalDiv = `
+      <div class="columns is-multiline">
+        <div class="column is-6">
+          <div class="title has-text-dark">Avime #${avimeInt}</div>
+          <div class="is-inline-block has-text-centered">
+            ${currentAvime.div}
           </div>
-        </div>`;
-
-  }
-
-  let finalDiv = `
-    <div class="columns is-multiline">
-      <div class="column is-6">
-        <div class="title has-text-dark">Avime #${avimeInt}</div>
-        <div class="is-inline-block has-text-centered">
-          ${currentAvime.div}
+        </div>
+        <div class="column is-6">
+          ${traitsDiv}
         </div>
       </div>
-      <div class="column is-6">
-        ${traitsDiv}
-      </div>
-    </div>
-    `
-  $("#view_avime_div").html(finalDiv);
-  $("#view_avime_section").removeClass("is-hidden");
+      `
+    $("#view_avime_div").html(finalDiv);
+    $("#view_avime_section").removeClass("is-hidden");
+  }
+  catch(e){
+    $("#modal_title").html("Error - Unable to load Avime");
+    $("#modal_text").text(e.message);
+    $("#modal_button").click();
+  }
+  $(this).removeClass("is-loading");
 });
 
 $(document).on('click', '.wardrobe-select', async function(){
@@ -561,6 +585,62 @@ $(document).on('click', '.menu-item', async function(){
   $(".main_content").addClass("is-hidden");
   $("#"+tmpData).removeClass("is-hidden");
 });
+
+$(document).on('click', '#avime_fusion_fuse_button', async function(){
+  $(this).addClass("is-loading");
+  try{
+    //console.log(avimeData);
+    const options = {value: og.ethers.utils.parseEther("0.01")};
+    let transaction = await fusionContract.mint(avimeData.wardrobeAvime.contractId, avimeData.wardrobeAvime.traitId, avimeData.wardrobeAvime.sex, options);
+    let receipt = await transaction.wait();
+    if(receipt.status){
+      avimeData.wardrobeAvime.traitId = [undefined,undefined,undefined,undefined,undefined,undefined];
+      $("#avime_fusion_fuse_button").prop("disabled",true);
+      $("#modal_title").html("Avime Fused!");
+      $("#modal_text").html($("#wardrobe_preview").html());
+      $("#modal_button").click();
+      setupUI();
+    }
+    else{
+      $("#modal_title").html("Error!");
+      $("#modal_text").html(JSON.stringify(receipt));
+      $("#modal_button").click();
+    }
+  }
+  catch(e){
+    $("#modal_title").html("Error - Mint Failed");
+    $("#modal_text").text(e.message);
+    $("#modal_button").click();
+  }
+  $(this).removeClass("is-loading");
+});
+
+$(document).on('click', '#avime_fusion_approve_button', async function(){
+  $(this).addClass("is-loading");
+  try{
+    let transaction = await s01Contract.setApprovalForAll(fusionAddress, true);
+    let receipt = await transaction.wait();
+    if(receipt.status){
+      $("#avime_fusion_approve_button").addClass("is-hidden");
+      $("#avime_fusion_fuse_button").removeClass("is-hidden");
+      $("#modal_title").html("Success!");
+      $("#modal_text").text("Your traits are approved for Fusion!");
+      $("#modal_button").click();
+    }
+    else{
+      $("#modal_title").html("Error - Approve Failed");
+      $("#modal_text").text(e.message);
+      $("#modal_button").click();
+    }
+  }
+  catch(e){
+    $("#modal_title").html("Error - Mint Failed");
+    $("#modal_text").text(e.message);
+    $("#modal_button").click();
+  }
+  $(this).removeClass("is-loading");
+});
+
 
 $(document).on('click', '#connectWalletButton', async function(){
   try{
