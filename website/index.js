@@ -335,6 +335,35 @@ async function updateFusedWallet(fusionBalance){
   }
 }
 
+function populateWardrobe(){
+  for(let i=0; i<15; i++){
+    for(let j=0; j<6; j++){
+      let currentThumbnail = `
+        <div traitid="0" traittype="${j}" traitnumber="${i}" class="wardrobe-trait wardrobe-trait-type-${j}  is-inline-block m-2">
+          <div class="has-text-centered">#${i}</div>
+          <figure class="image is-64x64">
+            <img src="${avimeData.s01Data.traitThumb[j][i]}"/>
+          </figure>
+        </div>`;
+
+        switch(j){
+          case 0: $("#wardrobe_background").append(currentThumbnail);
+                  break;
+          case 1: $("#wardrobe_body").append(currentThumbnail);
+                  break;
+          case 2: $("#wardrobe_face").append(currentThumbnail);
+                  break;
+          case 3: $("#wardrobe_clothes").append(currentThumbnail);
+                  break;
+          case 4: $("#wardrobe_hair").append(currentThumbnail);
+                  break;
+          case 5: $("#wardrobe_accessory").append(currentThumbnail);
+                  break;
+        }
+    }
+  }
+}
+
 async function updateCardsWallet(traitsBalance){
   $("#wallet_cards").html("");
   $("#wardrobe_background").html("");
@@ -394,7 +423,9 @@ async function setupUI(){
   updateFusedWallet(fusionBalance);
   updateCardsWallet(s01Balance);
   const currentBlock = (await og.provider.getBlockNumber() );
-
+  let approved = await s01Contract.isApprovedForAll(walletAddress, fusionAddress);
+  if(!approved)
+    $("#avime_fusion_approve_button").prop("disabled",false);
 }
 
 $(document).ready(async function(){
@@ -418,9 +449,18 @@ async function generateWardrobeAvime(){
       fullAvime = false;
   }
   if(fullAvime){
+    $("#avime_unique").html('Checking Avime Uniqueness...');
     let avimeDiv = (await generateAvime(undefined, avimeData.wardrobeAvime)).div;
-     $("#wardrobe_preview").html(avimeDiv);
-     //console.log(avimeData.wardrobeAvime);
+    console.log(avimeData.wardrobeAvime);
+    $("#wardrobe_preview").html(avimeDiv);
+    $("#avime_fusion_fuse_button").prop("disabled",false);
+    let aviHash = await fusionContract.getAvimeHash(avimeData.wardrobeAvime.sex, avimeData.wardrobeAvime.contractId, avimeData.wardrobeAvime.traitId);
+    let uniqueAvimeId = await fusionContract.checkAvimeHash(aviHash);
+    uniqueAvimeId = uniqueAvimeId.toNumber();
+    if(uniqueAvimeId)
+      $("#avime_unique").html(`<b style="color:red;">Duplicate of #${uniqueAvimeId}</b>`);
+    else
+      $("#avime_unique").html(`<b>Unique</b>`);
   }
 }
 
