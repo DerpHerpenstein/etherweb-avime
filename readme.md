@@ -10,6 +10,8 @@
 
 This is the on chain site for Avime.  Mint, Fuse and view your Avime and trait cards.
 
+Visit the on chain website with the etherweb portal: [avime.og](https://web.linagee.vision/og/avime.og)
+
 <!-- CONTACT -->
 ## Contact
 
