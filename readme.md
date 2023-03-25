@@ -2,7 +2,7 @@
   <img src="avime_circle.png" alt="Avime Circle" width=33% height=33%>
 
 <p align="center">
-  <img src="avime406.png" alt="Avime" width=33% height=33%>
+  <img src="avi406.png" alt="Avime" width=33% height=33%>
 
 </p>
 
